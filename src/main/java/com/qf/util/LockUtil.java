@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author ChenJie
@@ -62,10 +63,15 @@ public class LockUtil {
     public boolean lock(String key, Integer time){
         String uuid = UUID.randomUUID().toString();
         threadLocal.set(uuid);
+
         // 加分布式锁
-        String result = stringRedisTemplate.execute(new DefaultRedisScript<>(lockLua, String.class),
-                Collections.singletonList(key), uuid, time.toString());
-        return "1".equals(result);
+        Boolean absent = stringRedisTemplate.opsForValue().setIfAbsent(key, uuid, time, TimeUnit.MILLISECONDS);
+
+        // 加分布式锁
+        /*String result = stringRedisTemplate.execute(new DefaultRedisScript<>(lockLua, String.class),
+                Collections.singletonList(key), uuid, time.toString());*/
+        //return "1".equals(result);
+        return absent;
     }
 
     public boolean unlock(String key){
